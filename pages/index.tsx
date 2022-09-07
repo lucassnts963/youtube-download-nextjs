@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Center,
   useColorMode,
@@ -9,102 +9,115 @@ import {
   Image,
   HStack,
   Text,
+  Link as NativeLink,
   Heading,
   Box,
-  Link,
   VStack,
+  Input,
   Button,
   AspectRatio,
+  Select,
 } from "native-base";
+import Link from "next/link";
+
+import axios from "axios";
+
+import { ColorModeSwitch } from "../src/components/ColorModeSwitch";
+import Logo from "../src/assets/youtube.png";
+import { api } from "../src/services/api";
+import { useResultContext } from "../src/contexts/resultContext";
 
 // Start editing here, save and see your changes.
-export default function App() {
+export default function HomePage() {
+  const source = axios.CancelToken.source();
+  const resultContext = useResultContext();
+
+  const [url, setUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  function isValid(url: string) {
+    return true;
+  }
+
+  async function handleRequestInfo(url: string) {
+    if (!isValid(url)) {
+      return;
+    }
+    try {
+      const result = await api.get(`/info?url=${url}`, {
+        cancelToken: source.token,
+      });
+      const video = result.data;
+
+      resultContext.updateResultState(video);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function handleDownload() {
+    setIsLoading(true);
+    try {
+      const result = await api.get(`/info?url=${url}`);
+      const video = result.data;
+
+      console.log(video);
+      resultContext.updateResultState(video);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (
-    <Center
-      flex={1}
-      _dark={{ bg: "blueGray.900" }}
-      _light={{ bg: "blueGray.50" }}
-    >
-      <VStack alignItems="center" space="md">
-        <HStack alignItems="center" space="2xl">
-          <AspectRatio w={24} ratio={1.66}>
-            <Image
-              source={{ uri: "images/nextjs-logo.png" }}
-              alt="NextJS Logo"
-              resizeMode="contain"
-            />
-          </AspectRatio>
-          <Text fontSize="4xl">+</Text>
-          <Image
-            source={{ uri: "images/nativebase-logo.svg" }}
-            alt="NativeBase Logo"
-            size={24}
-            resizeMode="contain"
-          />
-        </HStack>
-        <Heading>Welcome to NativeBase</Heading>
-        <Text>
-          Edit{" "}
-          <Box
-            _text={{
-              fontFamily: "monospace",
-              fontSize: "sm",
-            }}
-            px={2}
-            py={1}
-            _dark={{ bg: "blueGray.800" }}
-            _light={{ bg: "blueGray.200" }}
-          >
-            src/pages/index.js
-          </Box>{" "}
-          and save to reload.
-        </Text>
-        <HStack alignItems="center" space="sm">
-          <Link href="https://nextjs.org/docs/getting-started" isExternal>
-            <Text
-              _light={{ color: "gray.700" }}
-              _dark={{ color: "gray.400" }}
-              underline
-              fontSize={"xl"}
-            >
-              Learn NextJS
-            </Text>
+    <Center flex={1} _dark={{ bg: "gray.700" }} _light={{ bg: "gray.100" }}>
+      <VStack w="full" px={5} space="md">
+        <Image
+          w={100}
+          h={100}
+          source={{ uri: Logo.src }}
+          alt="Logo"
+          alignSelf="center"
+        />
+        <Heading textAlign="center" mb={5}>
+          YouTube Downloader
+        </Heading>
+        <Input
+          w="full"
+          placeholder="Informe uma url"
+          borderColor="red.500"
+          value={url}
+          onChangeText={setUrl}
+          _focus={{
+            borderWidth: 2,
+            borderColor: "red.600",
+          }}
+          _hover={{
+            borderColor: "red.600",
+          }}
+          _input={{
+            borderColor: "red.600",
+          }}
+        />
+        <Select borderColor="red.500" defaultValue="video">
+          <Select.Item label="Video" value="video" />
+          <Select.Item label="Playlist" value="playlist" />
+        </Select>
+        <Button
+          colorScheme="red"
+          onPress={handleDownload}
+          isLoading={isLoading}
+        >
+          Download
+        </Button>
+        {!!resultContext.data && (
+          <Link href="/Details" passHref>
+            <NativeLink>Escolha o Formato para Download</NativeLink>
           </Link>
-          <Text>/</Text>
-          <Link href="https://docs.nativebase.io" isExternal>
-            <Text color="primary.500" underline fontSize={"xl"}>
-              Learn NativeBase
-            </Text>
-          </Link>
-        </HStack>
+        )}
       </VStack>
       <ColorModeSwitch />
-      <Link mt="6" href="https://docs.nativebase.io" isExternal>
-        <Button variant="outline" colorScheme="coolGray">
-          View Repo
-        </Button>
-      </Link>
     </Center>
-  );
-}
-// Color Switch Component
-function ColorModeSwitch() {
-  const { colorMode, toggleColorMode } = useColorMode();
-  return (
-    <Tooltip
-      label={colorMode === "dark" ? "Enable light mode" : "Enable dark mode"}
-      placement="bottom right"
-      openDelay={300}
-      closeOnClick={false}
-    >
-      <IconButton
-        position="absolute"
-        top={12}
-        right={8}
-        onPress={toggleColorMode}
-        icon={colorMode === "dark" ? <SunIcon /> : <MoonIcon />}
-        accessibilityLabel="Color Mode Switch"
-      />
-    </Tooltip>
   );
 }

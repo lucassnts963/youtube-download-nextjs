@@ -3,11 +3,16 @@ import "../styles/globals.css";
 import type { AppProps } from "next/app";
 import { NativeBaseProvider } from "native-base";
 
+//My Context
+import { ResultContextProvider } from "../src/contexts/resultContext";
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <NativeBaseProvider>
-      <Component {...pageProps} />
-    </NativeBaseProvider>
+    <ResultContextProvider>
+      <NativeBaseProvider>
+        <Component {...pageProps} />
+      </NativeBaseProvider>
+    </ResultContextProvider>
   );
 }
 
